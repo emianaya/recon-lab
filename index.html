@@ -1,0 +1,1199 @@
+<title>Recon Lab</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap">
+<style>
+:root{
+  --bg:#eef1f5; --surface:#ffffff; --surface-2:#e4e9ef;
+  --ink:#101820; --ink-2:#48525e; --ink-muted:#7c8896;
+  --line:#d7dee6; --line-strong:#c1cbd6;
+  --accent:#0e7c86; --accent-ink:#ffffff; --accent-wash:#0e7c8617;
+  --screen-bg:#0d1117; --screen-line:#1c2733; --screen-ink:#cfe0f2; --screen-muted:#5c7086;
+  --warn-bg:#fab21922; --warn-ink:#8a5a00; --warn-line:#fab21966;
+  --series-data:#2a78d6; --series-truth:#eb6834;
+  color-scheme:light;
+}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){
+    --bg:#0b0f14; --surface:#121821; --surface-2:#1a2330;
+    --ink:#e7edf5; --ink-2:#b7c3d1; --ink-muted:#7c8b9d;
+    --line:#263241; --line-strong:#324357;
+    --accent:#37c2cf; --accent-ink:#06181a; --accent-wash:#37c2cf1f;
+    --warn-bg:#fab21926; --warn-ink:#ffd066; --warn-line:#fab2194d;
+    --series-data:#3987e5; --series-truth:#d95926;
+    color-scheme:dark;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#0b0f14; --surface:#121821; --surface-2:#1a2330;
+  --ink:#e7edf5; --ink-2:#b7c3d1; --ink-muted:#7c8b9d;
+  --line:#263241; --line-strong:#324357;
+  --accent:#37c2cf; --accent-ink:#06181a; --accent-wash:#37c2cf1f;
+  --warn-bg:#fab21926; --warn-ink:#ffd066; --warn-line:#fab2194d;
+  --series-data:#3987e5; --series-truth:#d95926;
+  color-scheme:dark;
+}
+*{box-sizing:border-box;}
+body{
+  background:var(--bg); color:var(--ink);
+  font-family:"IBM Plex Sans",system-ui,-apple-system,sans-serif;
+  padding:20px 16px 48px; display:flex; flex-direction:column; align-items:center;
+}
+.mono{font-family:"IBM Plex Mono",ui-monospace,monospace;}
+h1,h2,h3{text-wrap:balance; margin:0;}
+.wrap{width:100%; max-width:1180px; display:flex; flex-direction:column; gap:16px;}
+
+/* header */
+header{
+  display:flex; justify-content:space-between; align-items:flex-end; gap:16px; flex-wrap:wrap;
+  border-bottom:1px solid var(--line); padding-bottom:14px;
+}
+header .id{display:flex; flex-direction:column; gap:4px;}
+header h1{font-size:1.5rem; font-weight:700; letter-spacing:-0.01em;}
+header p{margin:0; color:var(--ink-2); font-size:.9rem; max-width:56ch;}
+
+/* control deck */
+.deck{
+  background:var(--surface-2); border:1px solid var(--line); border-radius:10px;
+  padding:14px 16px; display:flex; flex-wrap:wrap; gap:18px 26px; align-items:flex-end;
+}
+.field{display:flex; flex-direction:column; gap:6px; min-width:0;}
+.field label{font-size:.68rem; text-transform:uppercase; letter-spacing:.07em; color:var(--ink-muted); font-weight:600;}
+.seg{display:flex; border:1px solid var(--line-strong); border-radius:7px; overflow:hidden;}
+.seg button{
+  font-family:inherit; font-size:.82rem; font-weight:500; color:var(--ink-2); background:var(--surface);
+  border:none; padding:7px 13px; cursor:pointer; border-right:1px solid var(--line-strong);
+}
+.seg button:last-child{border-right:none;}
+.seg button.active{background:var(--accent); color:var(--accent-ink); font-weight:600;}
+.seg button:disabled{opacity:.5; cursor:not-allowed;}
+.slidefield{display:flex; flex-direction:column; gap:6px; width:190px;}
+.slidefield .row{display:flex; justify-content:space-between; align-items:baseline;}
+.slidefield .row span:last-child{font-size:.78rem; color:var(--ink); font-weight:600;}
+input[type="range"]{width:100%; accent-color:var(--accent);}
+.btn{
+  font-family:inherit; font-size:.85rem; font-weight:600; padding:9px 16px; border-radius:7px;
+  border:1px solid var(--accent); background:var(--accent); color:var(--accent-ink); cursor:pointer;
+}
+.btn.secondary{background:transparent; color:var(--ink-2); border-color:var(--line-strong);}
+.btn:disabled{opacity:.45; cursor:not-allowed;}
+.spacer{flex:1 1 auto;}
+
+/* draw panel */
+.drawpanel{
+  background:var(--surface); border:1px solid var(--line); border-radius:10px; padding:14px 16px;
+  display:flex; gap:16px; flex-wrap:wrap; align-items:center;
+}
+.drawpanel canvas{background:var(--screen-bg); border-radius:6px; image-rendering:pixelated; cursor:crosshair; touch-action:none;}
+.brushrow{display:flex; gap:8px; flex-wrap:wrap; align-items:center;}
+.note{font-size:.78rem; color:var(--ink-muted); max-width:26ch;}
+
+/* two-row layout: acquisition (Scanner, Sinogram) then reconstruction (FBP, MLEM, Curves) —
+   both rows share the same 3-column template so panel edges line up; Scanner/Sinogram
+   take the first two columns and leave the third blank, rather than stretching or centering. */
+.grid-acq{display:grid; grid-template-columns:repeat(3,1fr); gap:14px;}
+.grid-recon{display:grid; grid-template-columns:repeat(3,1fr); gap:14px; align-items:stretch;}
+@media (max-width:860px){ .grid-acq, .grid-recon{grid-template-columns:1fr;} }
+.panel{
+  background:var(--surface); border:1px solid var(--line); border-radius:10px;
+  padding:12px; display:flex; flex-direction:column; gap:8px; min-width:0;
+}
+.panel.stretch{height:100%;}
+.panel .ptitle{display:flex; justify-content:space-between; align-items:baseline; gap:8px;}
+.panel .ptitle h2{font-size:.95rem; font-weight:600;}
+.panel .ptitle .tag{font-size:.68rem; color:var(--ink-muted); font-family:"IBM Plex Mono",monospace;}
+.ptitle-left{display:flex; align-items:baseline; gap:6px;}
+.infobtn{
+  width:16px; height:16px; border-radius:50%; border:1px solid var(--line-strong); background:none;
+  color:var(--ink-muted); font-size:.68rem; line-height:1; padding:0; flex:0 0 auto; cursor:pointer;
+  display:inline-flex; align-items:center; justify-content:center; transform:translateY(1px);
+}
+.infobtn:hover{color:var(--accent); border-color:var(--accent);}
+.infobtn[aria-expanded="true"]{background:var(--accent-wash); color:var(--accent); border-color:var(--accent);}
+
+.popover{
+  position:fixed; max-width:250px; background:var(--surface); border:1px solid var(--line-strong);
+  border-radius:8px; padding:10px 12px; font-size:.8rem; line-height:1.45; color:var(--ink-2);
+  box-shadow:0 8px 24px rgba(0,0,0,.2); z-index:50;
+}
+.popover[hidden]{display:none;}
+.popover p{margin:0;}
+.screen{
+  background:var(--screen-bg); border-radius:7px; border:1px solid #000a; position:relative; overflow:hidden;
+  aspect-ratio:1/1; width:100%;
+}
+.screen canvas{display:block; width:100%; height:100%;}
+.readout{
+  display:flex; justify-content:space-between; gap:8px; font-size:.72rem; color:var(--ink-muted);
+  font-family:"IBM Plex Mono",monospace; flex-wrap:wrap;
+}
+.readout b{color:var(--ink-2); font-weight:600;}
+
+.sino-axes{display:flex; gap:4px; align-items:stretch;}
+.sino-axes .screen{flex:1 1 auto; min-width:0;}
+.axis-y{
+  display:flex; flex-direction:column; justify-content:space-between; width:40px; flex:0 0 auto;
+  font-size:.62rem; font-family:"IBM Plex Mono",monospace; color:var(--ink-muted); text-align:right; padding:3px 0;
+}
+.axis-y span, .axis-x span{white-space:nowrap;}
+.axis-x{
+  display:flex; justify-content:space-between;
+  font-size:.62rem; font-family:"IBM Plex Mono",monospace; color:var(--ink-muted);
+}
+.axis-x-row{display:flex; align-items:center; gap:8px;}
+.axis-x-row .axis-x{flex:1;}
+.axis-name{font-size:.62rem; font-family:"IBM Plex Mono",monospace; color:var(--ink-muted); white-space:nowrap;}
+
+.iterbar{display:flex; align-items:center; gap:10px;}
+.iterbar .count{font-family:"IBM Plex Mono",monospace; font-size:.8rem; color:var(--ink); min-width:11ch;}
+.iterbar .endlabel{font-family:"IBM Plex Mono",monospace; font-size:.72rem; color:var(--ink-muted);}
+.iterbar button{
+  width:30px; height:30px; border-radius:6px; border:1px solid var(--line-strong); background:var(--surface);
+  color:var(--ink); cursor:pointer; font-size:.85rem; display:flex; align-items:center; justify-content:center;
+}
+.iterbar button:disabled{opacity:.4; cursor:not-allowed;}
+.iterbar input[type=range]{flex:1;}
+.iterbar button.bestbtn{width:auto; padding:0 10px; font-size:.72rem; font-weight:600; font-family:"IBM Plex Mono",monospace;}
+
+.chartwrap{background:var(--screen-bg); border-radius:7px; padding:6px 6px 2px; flex:1; display:flex; min-height:160px;}
+.chartwrap canvas{display:block; width:100%; height:100%; cursor:default;}
+.chartwrap canvas.chart-interactive{cursor:ew-resize;}
+.chartwrap canvas:focus-visible{outline:2px solid var(--accent); outline-offset:-2px;}
+
+.overfit{
+  border:1px solid var(--warn-line); background:var(--warn-bg); color:var(--warn-ink);
+  border-radius:7px; padding:8px 10px; font-size:.78rem; line-height:1.4; display:none;
+}
+.overfit.show{display:block;}
+.overfit b{font-weight:700;}
+
+.hidden{display:none !important;}
+</style>
+
+<div class="wrap">
+
+  <header>
+    <div class="id">
+      <h1>Recon Lab</h1>
+      <p>Simulate a scanner, watch the raw data it actually records, and reconstruct an image from it &mdash; one iteration at a time.</p>
+    </div>
+  </header>
+
+  <div class="deck">
+    <div class="field">
+      <label>Modality</label>
+      <div class="seg" id="modeSeg">
+        <button data-val="pet" class="active">PET</button>
+        <button data-val="ct">CT</button>
+      </div>
+    </div>
+    <div class="field">
+      <label>Object</label>
+      <div class="seg" id="phantomSeg">
+        <button data-val="shepp" class="active">Shepp&ndash;Logan</button>
+        <button data-val="circles">Circles</button>
+        <button data-val="draw">Draw your own</button>
+      </div>
+    </div>
+    <div class="slidefield">
+      <label>Photons detected</label>
+      <div class="iterbar">
+        <span class="endlabel mono">few</span>
+        <input type="range" id="doseSlider" min="0" max="3" step="1" value="0">
+        <span class="endlabel mono">many</span>
+      </div>
+    </div>
+    <div class="spacer"></div>
+    <button class="btn secondary" id="resetBtn">Reset</button>
+    <button class="btn" id="scanBtn">Start scan</button>
+  </div>
+
+  <div class="drawpanel hidden" id="drawPanel">
+    <canvas id="drawCanvas" width="256" height="256"></canvas>
+    <div style="display:flex; flex-direction:column; gap:10px;">
+      <div class="brushrow">
+        <div class="seg" id="brushSeg">
+          <button data-v="1" class="active">Paint</button>
+          <button data-v="0">Erase</button>
+        </div>
+      </div>
+      <button class="btn secondary" id="clearDraw" style="align-self:flex-start;">Clear canvas</button>
+      <p class="note">Draw inside the dashed circle. That's the field of view &mdash; the scanner can't see what falls outside it.</p>
+    </div>
+  </div>
+
+  <div class="grid-acq">
+
+    <div class="panel">
+      <div class="ptitle"><span class="ptitle-left"><h2>Scanner</h2><button class="infobtn" data-panel="scanner" aria-label="About the scanner panel" aria-expanded="false">&#9432;</button></span><span class="tag" id="scannerTag">idle</span></div>
+      <div class="screen"><canvas id="scannerCanvas" width="300" height="300"></canvas></div>
+      <div class="readout">
+        <span>View <b class="mono" id="scanView">0/60</b></span>
+        <span id="scanEventInfo">&mdash;</span>
+      </div>
+    </div>
+
+    <div class="panel">
+      <div class="ptitle"><span class="ptitle-left"><h2>Sinogram</h2><button class="infobtn" data-panel="sinogram" aria-label="About the sinogram panel" aria-expanded="false">&#9432;</button></span><span class="tag">what the scanner actually records</span></div>
+      <div class="sino-axes">
+        <div class="axis-y"><span>+32</span><span>0</span><span>&minus;32</span></div>
+        <div class="screen"><canvas id="sinoCanvas" width="300" height="300"></canvas></div>
+      </div>
+      <div class="axis-x-row" style="margin-left:42px;">
+        <div class="axis-x"><span>0&deg;</span><span>90&deg;</span><span>180&deg;</span></div>
+        <span class="axis-name">angle &theta;</span>
+      </div>
+      <div class="readout">
+        <span>Mean counts <b class="mono" id="meanCounts">&mdash;</b></span>
+        <span>Peak <b class="mono" id="peakCounts">&mdash;</b></span>
+      </div>
+    </div>
+
+  </div>
+
+  <div class="grid-recon">
+
+    <div class="panel stretch">
+      <div class="ptitle"><span class="ptitle-left"><h2>FBP</h2><button class="infobtn" data-panel="fbp" aria-label="About the FBP panel" aria-expanded="false">&#9432;</button></span><span class="tag">filtered backprojection</span></div>
+      <div class="screen"><canvas id="fbpCanvas" width="300" height="300"></canvas></div>
+      <div class="iterbar">
+        <span class="endlabel mono">smooth</span>
+        <input type="range" id="fbpCutoffSlider" min="5" max="100" step="1" value="50">
+        <span class="endlabel mono">sharp</span>
+      </div>
+    </div>
+
+    <div class="panel stretch">
+      <div class="ptitle"><span class="ptitle-left"><h2>MLEM</h2><button class="infobtn" data-panel="mlem" aria-label="About the MLEM panel" aria-expanded="false">&#9432;</button></span><span class="tag" id="reconTag">sharpens, then gets noisy</span></div>
+      <div class="screen"><canvas id="reconCanvas" width="300" height="300"></canvas></div>
+      <div class="iterbar">
+        <button id="playBtn" disabled title="Play">&#9654;</button>
+        <button id="jumpBestBtn" class="bestbtn" disabled title="Jump to best iteration">BEST</button>
+        <input type="range" id="iterSlider" min="0" max="0" step="1" value="0" disabled>
+        <span class="count mono" id="iterCount">iter 0/0</span>
+      </div>
+    </div>
+
+    <div class="panel stretch">
+      <div class="ptitle"><span class="ptitle-left"><h2>When to stop</h2><button class="infobtn" data-panel="stop" aria-label="About this panel" aria-expanded="false">&#9432;</button></span></div>
+      <div class="chartwrap">
+        <canvas id="chartCanvas" width="560" height="260" tabindex="0" role="slider" aria-label="Iteration" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"></canvas>
+      </div>
+      <div class="readout"><span class="mono" id="errReadout">&mdash;</span></div>
+      <div class="overfit" id="overfitNote"></div>
+    </div>
+
+  </div>
+
+</div>
+
+<div class="popover" id="infoPopover" role="tooltip" hidden>
+  <p id="infoPopoverText"></p>
+</div>
+
+<script src="recon-math.js"></script>
+<script>
+(function(){
+"use strict";
+
+/* ---------- config ---------- */
+const N = 64, NPIX = N*N;
+const N_ANGLES = 60, N_BINS = 64, N_RAYS = N_ANGLES*N_BINS;
+const DS = 1.0, RMAX = 46;
+const N_ITER = 100; // enough for the low-dose minimum (~iter 10) to land well inside the axis, not squeezed at either end
+const CHART_PAD = {L:4, R:8, T:10, B:22}; // shared by drawChart() and the chart's own pointer/keyboard interaction
+const DOSE_SCALE = [1.2, 4, 14, 55];
+
+const cx = (N-1)/2, cy = (N-1)/2;
+const angles = new Float32Array(N_ANGLES);
+for (let a=0;a<N_ANGLES;a++) angles[a] = a*180/N_ANGLES;
+
+/* ---------- DOM ---------- */
+const $ = id => document.getElementById(id);
+const scannerCanvas = $("scannerCanvas"), scannerCtx = scannerCanvas.getContext("2d");
+const sinoCanvas = $("sinoCanvas"), sinoCtx = sinoCanvas.getContext("2d");
+const reconCanvas = $("reconCanvas"), reconCtx = reconCanvas.getContext("2d");
+const chartCanvas = $("chartCanvas"), chartCtx = chartCanvas.getContext("2d");
+const fbpCanvas = $("fbpCanvas"), fbpCtx = fbpCanvas.getContext("2d");
+const drawCanvas = $("drawCanvas"), drawCtx = drawCanvas.getContext("2d");
+const SCAN_OX = scannerCanvas.width/2, SCAN_OY = scannerCanvas.height/2, SCAN_RINGR = scannerCanvas.width*0.42, SCAN_FOVR = SCAN_RINGR*0.72;
+
+/* ---------- palette helpers ---------- */
+function hotIron(t){
+  t = Math.min(1, Math.max(0, t));
+  let r,g,b;
+  if (t < 1/3){ r = 255*(t/(1/3)); g = 0; b = 0; }
+  else if (t < 2/3){ r = 255; g = 255*((t-1/3)/(1/3)); b = 0; }
+  else { r = 255; g = 255; b = 255*((t-2/3)/(1/3)); }
+  return [r|0, g|0, b|0];
+}
+function screenGlow(t){
+  t = Math.min(1, Math.max(0, t));
+  // lerp screen-bg -> bright cyan
+  const a=[13,17,23], b=[143,227,255];
+  return [a[0]+(b[0]-a[0])*t|0, a[1]+(b[1]-a[1])*t|0, a[2]+(b[2]-a[2])*t|0];
+}
+
+/* ---------- geometry: sparse Radon system matrix (CSR by ray) ----------
+   The actual forward/backprojection math lives in recon-math.js, loaded
+   above — the same file the adjoint/point-source/mass-conservation tests
+   in recon-math.test.js exercise. These are thin wrappers that just supply
+   this app's grid constants, so every other call site in this file is
+   unchanged. */
+let mat = null, sens = null;
+function buildSystemMatrix(){
+  return ReconMath.buildSystemMatrix(N, N_ANGLES, N_BINS, DS, RMAX, angles);
+}
+function computeSensitivity(m){
+  return ReconMath.computeSensitivity(m, NPIX);
+}
+function forwardProject(m, image){
+  return ReconMath.forwardProject(m, image);
+}
+function backProject(m, ratio){
+  return ReconMath.backProject(m, ratio, NPIX);
+}
+
+/* ---------- FBP: ramp-filtered backprojection ---------- */
+// naive O(M^2) DFT/IDFT — M = N_BINS = 64, so this is cheap (a few ms) and needs no library.
+function computeFBPSpectra(measured){
+  return ReconMath.computeFBPSpectra(measured, N_ANGLES, N_BINS);
+}
+function fbpReconstruct(spectra, cutoff){
+  return ReconMath.fbpReconstruct(mat, spectra, cutoff, N_ANGLES, N_BINS, NPIX);
+}
+
+/* ---------- phantoms ---------- */
+function newGrid(){ return new Float32Array(NPIX); }
+
+function phantomShepp(){
+  const g = newGrid();
+  const ellipses = [
+    {cx:0, cy:0, a:0.69, b:0.92, ang:0, val:0.55},
+    {cx:0, cy:-0.0184, a:0.6624, b:0.874, ang:0, val:-0.35},
+    {cx:0.22, cy:0, a:0.11, b:0.31, ang:-18, val:0.4},
+    {cx:-0.22, cy:0, a:0.16, b:0.41, ang:18, val:0.4},
+    {cx:0, cy:0.35, a:0.21, b:0.25, ang:0, val:0.25},
+    {cx:0, cy:0.1, a:0.046, b:0.046, ang:0, val:0.45},
+    {cx:0, cy:-0.1, a:0.046, b:0.046, ang:0, val:0.45},
+    {cx:-0.08, cy:-0.605, a:0.046, b:0.023, ang:0, val:0.3},
+    {cx:0, cy:-0.605, a:0.023, b:0.023, ang:0, val:0.3},
+    {cx:0.06, cy:-0.605, a:0.023, b:0.046, ang:0, val:0.3},
+  ];
+  for (let y=0;y<N;y++){
+    for (let x=0;x<N;x++){
+      const u=(x-cx)/30, v=(y-cy)/30;
+      let val=0;
+      for (const e of ellipses){
+        const th=e.ang*Math.PI/180;
+        const du=u-e.cx, dv=v-e.cy;
+        const ur = du*Math.cos(th)+dv*Math.sin(th);
+        const vr = -du*Math.sin(th)+dv*Math.cos(th);
+        if ((ur*ur)/(e.a*e.a) + (vr*vr)/(e.b*e.b) <= 1) val += e.val;
+      }
+      g[y*N+x] = Math.max(0, val);
+    }
+  }
+  return g;
+}
+function phantomCircles(){
+  const g = newGrid();
+  const shapes = [
+    {cx:0, cy:0, r:0.85, val:0.18},
+    {cx:-0.32, cy:0.22, r:0.28, val:0.9},
+    {cx:0.32, cy:0.16, r:0.22, val:0.5},
+    {cx:0.05, cy:-0.38, r:0.18, val:1.0},
+  ];
+  for (let y=0;y<N;y++){
+    for (let x=0;x<N;x++){
+      const u=(x-cx)/30, v=(y-cy)/30;
+      let val=0;
+      for (const s of shapes){
+        const du=u-s.cx, dv=v-s.cy;
+        if (du*du+dv*dv <= s.r*s.r) val = s.val;
+      }
+      g[y*N+x]=val;
+    }
+  }
+  return g;
+}
+let customPhantom = newGrid();
+
+function currentPhantomSource(){ return state.phantomKind === "draw" ? customPhantom : (state.phantomKind === "shepp" ? phantomShepp() : phantomCircles()); }
+
+/* ---------- draw canvas ---------- */
+let brushVal = 1, painting = false;
+function renderDrawCanvas(){
+  const img = drawCtx.createImageData(N,N);
+  for (let i=0;i<NPIX;i++){
+    const c = hotIron(customPhantom[i]);
+    img.data[i*4]=c[0]; img.data[i*4+1]=c[1]; img.data[i*4+2]=c[2]; img.data[i*4+3]=255;
+  }
+  drawCtx.imageSmoothingEnabled = false;
+  const off = document.createElement("canvas"); off.width=N; off.height=N;
+  off.getContext("2d").putImageData(img,0,0);
+  drawCtx.clearRect(0,0,256,256);
+  drawCtx.drawImage(off,0,0,256,256);
+  // FOV guide
+  drawCtx.strokeStyle = "rgba(207,224,242,0.35)";
+  drawCtx.setLineDash([4,4]);
+  drawCtx.beginPath();
+  drawCtx.arc(128,128,30*4,0,Math.PI*2);
+  drawCtx.stroke();
+  drawCtx.setLineDash([]);
+}
+function paintAt(px,py){
+  const gx = Math.floor(px/256*N), gy = Math.floor(py/256*N);
+  const rad = 1;
+  for (let dy=-rad;dy<=rad;dy++) for (let dx=-rad;dx<=rad;dx++){
+    const xx=gx+dx, yy=gy+dy;
+    if (xx<0||xx>=N||yy<0||yy>=N) continue;
+    if (dx*dx+dy*dy > rad*rad+0.5) continue;
+    customPhantom[yy*N+xx] = brushVal;
+  }
+  renderDrawCanvas();
+}
+function drawPos(e){
+  const r = drawCanvas.getBoundingClientRect();
+  const cx_ = (e.touches? e.touches[0].clientX : e.clientX) - r.left;
+  const cy_ = (e.touches? e.touches[0].clientY : e.clientY) - r.top;
+  return [cx_ * (256/r.width), cy_ * (256/r.height)];
+}
+drawCanvas.addEventListener("mousedown", e=>{ painting=true; paintAt(...drawPos(e)); });
+drawCanvas.addEventListener("mousemove", e=>{ if(painting) paintAt(...drawPos(e)); });
+window.addEventListener("mouseup", ()=> painting=false);
+drawCanvas.addEventListener("touchstart", e=>{ painting=true; paintAt(...drawPos(e)); e.preventDefault(); }, {passive:false});
+drawCanvas.addEventListener("touchmove", e=>{ if(painting) paintAt(...drawPos(e)); e.preventDefault(); }, {passive:false});
+drawCanvas.addEventListener("touchend", ()=> painting=false);
+
+$("brushSeg").addEventListener("click", e=>{
+  const btn = e.target.closest("button"); if (!btn) return;
+  document.querySelectorAll("#brushSeg button").forEach(b=>b.classList.remove("active"));
+  btn.classList.add("active");
+  brushVal = parseFloat(btn.dataset.v);
+});
+$("clearDraw").addEventListener("click", ()=>{ customPhantom.fill(0); renderDrawCanvas(); });
+
+/* ---------- state ---------- */
+const state = {
+  mode: "pet",
+  phantomKind: "shepp",
+  doseIdx: 0,
+  phase: "setup", // setup | scanning | reconstructing | done
+  phantom: null,
+  measured: null,
+  truthProj: null,
+  iterFrames: [],
+  dataErr: [],
+  trueErr: [],
+  bestIter: 0,
+  currentIter: 0,
+  scanTimer: null,
+  playTimer: null,
+  flashes: [],
+  fbpSpectra: null,
+  fbpCutoff: 0.5,
+};
+
+/* ---------- rng: poisson ---------- */
+function poisson(lambda){
+  return ReconMath.poisson(lambda);
+}
+
+/* ---------- rendering: image panels ---------- */
+function drawGridToScreen(ctx, canvasEl, grid, cmap, scaleMax){
+  const img = new ImageData(N,N);
+  const m = scaleMax || 1;
+  for (let i=0;i<NPIX;i++){
+    const c = cmap(grid[i]/m);
+    img.data[i*4]=c[0]; img.data[i*4+1]=c[1]; img.data[i*4+2]=c[2]; img.data[i*4+3]=255;
+  }
+  const off = document.createElement("canvas"); off.width=N; off.height=N;
+  off.getContext("2d").putImageData(img,0,0);
+  ctx.imageSmoothingEnabled = false;
+  ctx.clearRect(0,0,canvasEl.width,canvasEl.height);
+  ctx.drawImage(off,0,0,canvasEl.width,canvasEl.height);
+}
+
+/* sinogram: width = N_ANGLES, height = N_BINS, revealed progressively */
+let sinoImgData = null;
+function resetSinogramCanvas(){
+  sinoImgData = sinoCtx.createImageData(N_ANGLES, N_BINS);
+  for (let i=0;i<sinoImgData.data.length;i+=4){
+    sinoImgData.data[i]=13; sinoImgData.data[i+1]=17; sinoImgData.data[i+2]=23; sinoImgData.data[i+3]=255;
+  }
+  paintSinogram();
+}
+function paintSinogram(){
+  const off = document.createElement("canvas"); off.width=N_ANGLES; off.height=N_BINS;
+  off.getContext("2d").putImageData(sinoImgData,0,0);
+  sinoCtx.imageSmoothingEnabled = false;
+  sinoCtx.clearRect(0,0,sinoCanvas.width,sinoCanvas.height);
+  sinoCtx.drawImage(off,0,0,sinoCanvas.width,sinoCanvas.height);
+}
+function fillSinogramColumn(a, maxVal){
+  for (let b=0;b<N_BINS;b++){
+    const v = state.measured[a*N_BINS+b];
+    const c = screenGlow(v/maxVal);
+    const idx = (b*N_ANGLES+a)*4;
+    sinoImgData.data[idx]=c[0]; sinoImgData.data[idx+1]=c[1]; sinoImgData.data[idx+2]=c[2]; sinoImgData.data[idx+3]=255;
+  }
+}
+/* PET: the whole ring accumulates counts at once, so reveal every bin together, scaled by acquisition progress */
+function revealSinogramFraction(frac, maxVal){
+  for (let a=0;a<N_ANGLES;a++) for (let b=0;b<N_BINS;b++){
+    const v = state.measured[a*N_BINS+b]*frac;
+    const c = screenGlow(v/maxVal);
+    const idx = (b*N_ANGLES+a)*4;
+    sinoImgData.data[idx]=c[0]; sinoImgData.data[idx+1]=c[1]; sinoImgData.data[idx+2]=c[2]; sinoImgData.data[idx+3]=255;
+  }
+}
+
+/* ---------- scanner schematic ---------- */
+function drawScannerStatic(){
+  const c = scannerCtx, W=scannerCanvas.width, H=scannerCanvas.height;
+  c.clearRect(0,0,W,H);
+  const ox=SCAN_OX, oy=SCAN_OY, ringR=SCAN_RINGR;
+  if (state.phantom){
+    const img = new ImageData(N,N);
+    for (let i=0;i<NPIX;i++){
+      const t = state.phantom[i];
+      img.data[i*4]=t>0?255:20; img.data[i*4+1]=t>0?210:24; img.data[i*4+2]=t>0?160:31;
+      img.data[i*4+3]= t>0 ? Math.min(255, 60+t*180) : 40;
+    }
+    const off=document.createElement("canvas"); off.width=N; off.height=N;
+    off.getContext("2d").putImageData(img,0,0);
+    c.save();
+    c.beginPath(); c.arc(ox,oy,SCAN_FOVR,0,Math.PI*2); c.clip();
+    c.imageSmoothingEnabled=false;
+    c.drawImage(off, ox-SCAN_FOVR, oy-SCAN_FOVR, SCAN_FOVR*2, SCAN_FOVR*2);
+    c.restore();
+  }
+  c.strokeStyle = "#1c2733"; c.lineWidth=1;
+  c.beginPath(); c.arc(ox,oy,SCAN_FOVR,0,Math.PI*2); c.stroke();
+
+  if (state.mode === "pet"){
+    const nDet = 40;
+    for (let i=0;i<nDet;i++){
+      const th = i/nDet*Math.PI*2;
+      const dx = ox+Math.cos(th)*ringR, dy = oy+Math.sin(th)*ringR;
+      c.fillStyle = "#324357";
+      c.beginPath(); c.arc(dx,dy,3.2,0,Math.PI*2); c.fill();
+    }
+  } else {
+    c.strokeStyle="#1c2733";
+    c.beginPath(); c.arc(ox,oy,ringR,0,Math.PI*2); c.stroke();
+    const nDet=48;
+    for (let i=0;i<nDet;i++){
+      const th=i/nDet*Math.PI*2;
+      const dx=ox+Math.cos(th)*ringR, dy=oy+Math.sin(th)*ringR;
+      c.fillStyle="#232f3d";
+      c.beginPath(); c.arc(dx,dy,2,0,Math.PI*2); c.fill();
+    }
+  }
+}
+function drawCTBeam(angleDeg){
+  const c = scannerCtx, ox=SCAN_OX, oy=SCAN_OY, ringR=SCAN_RINGR;
+  const th = angleDeg*Math.PI/180;
+  const sx = ox+Math.cos(th)*ringR, sy = oy+Math.sin(th)*ringR;
+  c.fillStyle="#ffcf5c";
+  c.beginPath(); c.arc(sx,sy,4.5,0,Math.PI*2); c.fill();
+  const fan=[-22,-12,0,12,22];
+  c.strokeStyle="rgba(255,207,92,0.5)"; c.lineWidth=1;
+  for (const f of fan){
+    const tth = th+Math.PI + f*Math.PI/180;
+    const tx = ox+Math.cos(tth)*ringR, ty=oy+Math.sin(tth)*ringR;
+    c.beginPath(); c.moveTo(sx,sy); c.lineTo(tx,ty); c.stroke();
+  }
+}
+
+/* PET: sample an annihilation point weighted by activity, fire two back-to-back
+   photons in a random direction, and record where they hit the detector ring */
+function buildLocationCDF(phantom){
+  const cdf = new Float32Array(NPIX);
+  let s = 0;
+  for (let i=0;i<NPIX;i++){ s += Math.max(0,phantom[i]); cdf[i]=s; }
+  return { cdf, total: s };
+}
+function sampleLocationIndex(cdfObj){
+  if (cdfObj.total <= 0) return Math.floor(Math.random()*NPIX);
+  const u = Math.random()*cdfObj.total;
+  let lo=0, hi=NPIX-1;
+  while (lo<hi){
+    const mid = (lo+hi)>>1;
+    if (cdfObj.cdf[mid] < u) lo = mid+1; else hi = mid;
+  }
+  return lo;
+}
+function raySphereIntersect(px,py,dx,dy,ox,oy,R){
+  const fx = px-ox, fy = py-oy;
+  const b = 2*(fx*dx+fy*dy);
+  const c = fx*fx+fy*fy-R*R;
+  const disc = b*b-4*c;
+  if (disc < 0) return null;
+  const sq = Math.sqrt(disc);
+  return [(-b-sq)/2, (-b+sq)/2];
+}
+function spawnPETFlash(cdfObj, now){
+  const idx = sampleLocationIndex(cdfObj);
+  const px0 = idx % N, py0 = (idx/N)|0;
+  const px = SCAN_OX - SCAN_FOVR + (px0+0.5)/N*SCAN_FOVR*2;
+  const py = SCAN_OY - SCAN_FOVR + (py0+0.5)/N*SCAN_FOVR*2;
+  const phi = Math.random()*Math.PI*2;
+  const dx = Math.cos(phi), dy = Math.sin(phi);
+  const t = raySphereIntersect(px,py,dx,dy,SCAN_OX,SCAN_OY,SCAN_RINGR);
+  if (!t) return null;
+  const d1x = px+t[0]*dx, d1y = py+t[0]*dy;
+  const d2x = px+t[1]*dx, d2y = py+t[1]*dy;
+  state.flashes.push({px,py,d1x,d1y,d2x,d2y,t0:now});
+  const theta = phi % Math.PI;
+  const r = (px0-cx)*Math.cos(theta) + (py0-cy)*Math.sin(theta);
+  const a = ((Math.round(theta/Math.PI*N_ANGLES))%N_ANGLES+N_ANGLES)%N_ANGLES;
+  const b = Math.max(0, Math.min(N_BINS-1, Math.round(r + (N_BINS-1)/2)));
+  return {a, b};
+}
+function drawPETFlashes(flashes, now){
+  const c = scannerCtx, life = 450;
+  for (const f of flashes){
+    const age = now-f.t0;
+    if (age > life) continue;
+    const k = 1-age/life;
+    c.fillStyle = "rgba(255,207,92,"+(0.9*k).toFixed(3)+")";
+    c.beginPath(); c.arc(f.px,f.py, 2.6+3*(1-k), 0, Math.PI*2); c.fill();
+    c.strokeStyle = "rgba(255,207,92,"+(0.5*k).toFixed(3)+")"; c.lineWidth=1.3;
+    c.beginPath(); c.moveTo(f.d1x,f.d1y); c.lineTo(f.d2x,f.d2y); c.stroke();
+    c.fillStyle = "rgba(255,207,92,"+(0.9*k).toFixed(3)+")";
+    c.beginPath(); c.arc(f.d1x,f.d1y,3.4,0,Math.PI*2); c.fill();
+    c.beginPath(); c.arc(f.d2x,f.d2y,3.4,0,Math.PI*2); c.fill();
+  }
+}
+
+/* error chart */
+function resizeChartCanvas(){
+  const w = Math.round(chartCanvas.clientWidth), h = Math.round(chartCanvas.clientHeight);
+  if (w>0 && h>0 && (chartCanvas.width!==w || chartCanvas.height!==h)){
+    chartCanvas.width = w; chartCanvas.height = h;
+    drawChart();
+  }
+}
+new ResizeObserver(resizeChartCanvas).observe(chartCanvas);
+
+function haloText(c, text, x, y, color, align){
+  c.textAlign = align;
+  c.lineJoin = "round"; c.lineWidth = 3; c.strokeStyle = "#0d1117";
+  c.strokeText(text, x, y);
+  c.fillStyle = color;
+  c.fillText(text, x, y);
+}
+
+function roundRectPath(c, x, y, w, h, r){
+  c.beginPath();
+  c.moveTo(x+r, y);
+  c.arcTo(x+w, y, x+w, y+h, r);
+  c.arcTo(x+w, y+h, x, y+h, r);
+  c.arcTo(x, y+h, x, y, r);
+  c.arcTo(x, y, x+w, y, r);
+  c.closePath();
+}
+
+let bestButtonBox = null; // {x,y,w,h} in chart-canvas pixel space, or null when not shown
+function pointInBestButton(clientX, clientY){
+  if (!bestButtonBox) return false;
+  const r = chartCanvas.getBoundingClientRect();
+  const x = (clientX - r.left) * (chartCanvas.width / r.width);
+  const y = (clientY - r.top) * (chartCanvas.height / r.height);
+  return x >= bestButtonBox.x && x <= bestButtonBox.x + bestButtonBox.w &&
+         y >= bestButtonBox.y && y <= bestButtonBox.y + bestButtonBox.h;
+}
+
+function drawChart(){
+  const c = chartCtx, W=chartCanvas.width, H=chartCanvas.height;
+  c.clearRect(0,0,W,H);
+  const n = state.dataErr.length;
+  if (n < 2) return;
+  const dataColor = getComputedStyle(document.documentElement).getPropertyValue("--series-data").trim();
+  const truthColor = getComputedStyle(document.documentElement).getPropertyValue("--series-truth").trim();
+  const accentColor = getComputedStyle(document.documentElement).getPropertyValue("--accent").trim();
+  const accentInk = getComputedStyle(document.documentElement).getPropertyValue("--accent-ink").trim();
+  const {L:padL, R:padR, T:padT, B:padB} = CHART_PAD;
+  const plotW = W-padL-padR, plotH = H-padT-padB;
+
+  // linear iteration axis, fixed to the full [1, N_ITER] domain regardless of how far the run has gotten
+  const xOf = i => padL + plotW*(i-1)/(N_ITER-1);
+
+  // normalize each curve to its own range (they're different units — no shared y-axis),
+  // over the same span that's actually plotted, so nothing is artificially clamped
+  const dSlice = state.dataErr.slice(1), tSlice = state.trueErr.slice(1);
+  const maxD = Math.max(...dSlice), minD = Math.min(...dSlice);
+  const maxT = Math.max(...tSlice), minT = Math.min(...tSlice);
+  const yOf = (v,mn,mx) => padT + plotH*(1-(v-mn)/((mx-mn)||1));
+
+  function plotSeries(arr, mn, mx, color){
+    c.strokeStyle = color; c.lineWidth=1.8; c.beginPath();
+    for (let i=1;i<n;i++){
+      const x = xOf(i), y = yOf(arr[i],mn,mx);
+      i===1 ? c.moveTo(x,y) : c.lineTo(x,y);
+    }
+    c.stroke();
+  }
+
+  // tick marks + gridlines
+  const ticks = [1,50,N_ITER];
+  c.font = "10px 'IBM Plex Mono', monospace"; c.fillStyle = "#5c7086";
+  ticks.forEach((t,idx)=>{
+    const x = xOf(t);
+    c.strokeStyle = "#1c2733"; c.lineWidth=1;
+    c.beginPath(); c.moveTo(x,padT); c.lineTo(x,H-padB); c.stroke();
+    c.strokeStyle = "#5c7086";
+    c.beginPath(); c.moveTo(x,H-padB); c.lineTo(x,H-padB+4); c.stroke();
+    c.textAlign = idx===0 ? "left" : idx===ticks.length-1 ? "right" : "center";
+    c.fillText(String(t), x, H-3);
+  });
+
+  plotSeries(state.dataErr, minD, maxD, dataColor);
+  plotSeries(state.trueErr, minT, maxT, truthColor);
+
+  // mark the RMSE minimum once it's known, with a small clickable "best" button
+  // (same action as the BEST button next to the slider) so the dashed mark isn't ambiguous
+  if (state.phase === "done"){
+    const bx = xOf(state.bestIter), by = yOf(state.trueErr[state.bestIter], minT, maxT);
+    c.strokeStyle = "rgba(207,224,242,0.5)"; c.setLineDash([3,3]); c.lineWidth=1;
+    c.beginPath(); c.moveTo(bx,padT); c.lineTo(bx,H-padB); c.stroke(); c.setLineDash([]);
+    c.fillStyle = truthColor;
+    c.beginPath(); c.arc(bx,by,3.6,0,Math.PI*2); c.fill();
+    c.strokeStyle = "#0d1117"; c.lineWidth=1.4;
+    c.beginPath(); c.arc(bx,by,3.6,0,Math.PI*2); c.stroke();
+
+    c.font = "600 10px 'IBM Plex Mono', monospace";
+    const label = "BEST";
+    const textW = c.measureText(label).width;
+    const padX = 7, h = 17;
+    let bx0 = bx + 7, by0 = padT + 1;
+    if (bx0 + textW + padX*2 > W - 2) bx0 = W - 2 - (textW + padX*2);
+    const boxW = textW + padX*2;
+    roundRectPath(c, bx0, by0, boxW, h, h/2);
+    c.fillStyle = accentColor; c.fill();
+    c.fillStyle = accentInk;
+    c.textAlign = "left"; c.textBaseline = "middle";
+    c.fillText(label, bx0+padX, by0+h/2+0.5);
+    c.textBaseline = "alphabetic";
+    bestButtonBox = { x: bx0, y: by0, w: boxW, h: h };
+  } else {
+    bestButtonBox = null;
+  }
+
+  // current position marker, colored to match the slider's accent so the two vertical lines read differently
+  const ix = xOf(state.currentIter);
+  c.strokeStyle = accentColor; c.lineWidth=1.6;
+  c.beginPath(); c.moveTo(ix,padT); c.lineTo(ix,H-padB); c.stroke();
+
+  // label each curve directly at its endpoint instead of a legend — haloed so the line
+  // passing near the label never reads as striking through it
+  const lastI = n-1;
+  if (lastI >= 5){
+    const lx = xOf(lastI) - 8;
+    c.font = "11px 'IBM Plex Mono', monospace";
+    haloText(c, "fit to data", lx, yOf(state.dataErr[lastI],minD,maxD) - 14, dataColor, "right");
+    haloText(c, "true error", lx, yOf(state.trueErr[lastI],minT,maxT) + 16, truthColor, "right");
+  }
+
+  // per-curve normalization exaggerates the true-error rise visually — ground it with real numbers
+  const cur = state.trueErr[state.currentIter];
+  const bestTxt = state.phase==="done" ? state.trueErr[state.bestIter].toFixed(3) : Math.min(...state.trueErr).toFixed(3);
+  $("errReadout").textContent = "error now "+cur.toFixed(3)+" · best "+bestTxt;
+  chartCanvas.setAttribute("aria-valuenow", state.currentIter);
+  chartCanvas.setAttribute("aria-valuemax", N_ITER);
+}
+
+/* ---------- simulation flow ---------- */
+function resetAll(){
+  cancelAnimationFrame(state.scanTimer); clearInterval(state.playTimer);
+  state.scanTimer = null; state.playTimer = null; state.flashes = [];
+  bestButtonBox = null;
+  $("playBtn").innerHTML = "&#9654;";
+  chartCanvas.classList.remove("chart-interactive");
+  state.phase = "setup";
+  state.iterFrames=[]; state.dataErr=[]; state.trueErr=[];
+  state.currentIter=0; state.fbpSpectra=null;
+  state.phantom = currentPhantomSource();
+  resetSinogramCanvas();
+  drawScannerStatic();
+  reconCtx.clearRect(0,0,reconCanvas.width,reconCanvas.height);
+  fbpCtx.clearRect(0,0,fbpCanvas.width,fbpCanvas.height);
+  chartCtx.clearRect(0,0,chartCanvas.width,chartCanvas.height);
+  $("scanView").textContent = state.mode==="pet" ? "0%" : "0/"+N_ANGLES;
+  $("scanEventInfo").textContent = "—";
+  $("meanCounts").textContent = "—";
+  $("peakCounts").textContent = "—";
+  $("iterCount").textContent = "iter 0/0";
+  $("errReadout").textContent = "—";
+  $("iterSlider").max = 0; $("iterSlider").value = 0; $("iterSlider").disabled = true;
+  $("playBtn").disabled = true;
+  $("jumpBestBtn").disabled = true;
+  $("fbpCutoffSlider").disabled = true;
+  $("scannerTag").textContent = "idle";
+  $("overfitNote").classList.remove("show");
+  $("scanBtn").disabled = false;
+  $("scanBtn").textContent = "Start scan";
+}
+
+function finalizeCounts(){
+  let sum=0, peak=0;
+  for (let i=0;i<N_RAYS;i++){ sum+=state.measured[i]; if (state.measured[i]>peak) peak=state.measured[i]; }
+  $("meanCounts").textContent = (sum/N_RAYS).toFixed(1);
+  $("peakCounts").textContent = peak.toFixed(0);
+
+  state.fbpSpectra = computeFBPSpectra(state.measured);
+  $("fbpCutoffSlider").disabled = false;
+  renderFBP();
+}
+
+function renderFBP(){
+  if (!state.fbpSpectra) return;
+  const img = fbpReconstruct(state.fbpSpectra, state.fbpCutoff);
+  const maxV = Math.max(0.05, Math.max(...img));
+  drawGridToScreen(fbpCtx, fbpCanvas, img, hotIron, maxV);
+}
+
+function startScan(){
+  if (state.phase !== "setup") return;
+  state.phantom = currentPhantomSource();
+  state.truthProj = forwardProject(mat, state.phantom);
+  const scale = DOSE_SCALE[state.doseIdx];
+  state.measured = new Float32Array(N_RAYS);
+  for (let i=0;i<N_RAYS;i++) state.measured[i] = poisson(state.truthProj[i]*scale);
+  const maxMeasured = Math.max(1, Math.max(...state.measured));
+
+  resetSinogramCanvas();
+  state.phase = "scanning";
+  $("scanBtn").disabled = true;
+  if (state.mode === "pet") startScanPET(maxMeasured); else startScanCT(maxMeasured);
+}
+
+/* PET: the ring collects coincidence events simultaneously over the whole
+   acquisition, so we animate individual annihilation → coincidence flashes
+   while every sinogram bin fades in together, in proportion to elapsed time. */
+function startScanPET(maxMeasured){
+  $("scannerTag").textContent = "acquiring coincidences";
+  state.flashes = [];
+  const cdfObj = buildLocationCDF(state.phantom);
+  const duration = 1700, spawnEvery = 50;
+  let lastSpawn = -Infinity;
+  const t0 = performance.now();
+
+  function frame(now){
+    const elapsed = now-t0;
+    const frac = Math.min(1, elapsed/duration);
+    revealSinogramFraction(frac, maxMeasured);
+    paintSinogram();
+
+    if (frac < 1 && elapsed-lastSpawn > spawnEvery){
+      lastSpawn = elapsed;
+      const info = spawnPETFlash(cdfObj, now);
+      if (info) $("scanEventInfo").textContent = "annihilation → LOR view "+info.a+", bin "+info.b;
+    }
+    state.flashes = state.flashes.filter(f => now-f.t0 < 450);
+    drawScannerStatic();
+    drawPETFlashes(state.flashes, now);
+    $("scanView").textContent = Math.round(frac*100)+"%";
+
+    if (frac < 1 || state.flashes.length > 0){
+      state.scanTimer = requestAnimationFrame(frame);
+    } else {
+      revealSinogramFraction(1, maxMeasured); paintSinogram();
+      drawScannerStatic();
+      $("scannerTag").textContent = "scan complete";
+      $("scanEventInfo").textContent = "acquisition complete";
+      finalizeCounts();
+      startReconstruction();
+    }
+  }
+  state.scanTimer = requestAnimationFrame(frame);
+}
+
+/* CT: a single source rotates through the views in sequence, illuminating one
+   fan of rays — and one sinogram column — at a time. */
+function startScanCT(maxMeasured){
+  $("scannerTag").textContent = "rotating source";
+  const duration = 1700;
+  let revealed = 0;
+  const t0 = performance.now();
+
+  function frame(now){
+    const elapsed = now-t0;
+    const frac = Math.min(1, elapsed/duration);
+    const target = Math.floor(frac*N_ANGLES);
+    while (revealed < target && revealed < N_ANGLES){ fillSinogramColumn(revealed, maxMeasured); revealed++; }
+    paintSinogram();
+    drawScannerStatic();
+    drawCTBeam(angles[Math.min(revealed, N_ANGLES-1)]);
+    $("scanView").textContent = Math.min(revealed,N_ANGLES)+"/"+N_ANGLES;
+    $("scanEventInfo").textContent = "fan sweep";
+
+    if (frac < 1){
+      state.scanTimer = requestAnimationFrame(frame);
+    } else {
+      while (revealed < N_ANGLES){ fillSinogramColumn(revealed, maxMeasured); revealed++; }
+      paintSinogram();
+      drawScannerStatic();
+      $("scannerTag").textContent = "scan complete";
+      finalizeCounts();
+      startReconstruction();
+    }
+  }
+  state.scanTimer = requestAnimationFrame(frame);
+}
+
+function startReconstruction(){
+  state.phase = "reconstructing";
+  $("scannerTag").textContent = "scan complete";
+  $("reconTag").textContent = "running";
+  let estimate = new Float32Array(NPIX).fill(0.15);
+  const scale = DOSE_SCALE[state.doseIdx];
+  let iter = 0;
+  state.iterFrames=[estimate.slice()];
+  state.dataErr=[dataFitError(estimate)];
+  state.trueErr=[trueError(estimate, scale)];
+
+  function step(){
+    estimate = ReconMath.mlemStep(mat, state.measured, estimate, sens, NPIX);
+    iter++;
+    state.iterFrames.push(estimate.slice());
+    state.dataErr.push(dataFitError(estimate));
+    state.trueErr.push(trueError(estimate, scale));
+
+    state.currentIter = iter;
+    renderReconFrame(iter);
+
+    if (iter < N_ITER){
+      state.playTimer = setTimeout(()=>requestAnimationFrame(step), 25);
+    } else {
+      state.playTimer = null;
+      finishReconstruction();
+    }
+  }
+  requestAnimationFrame(step);
+}
+
+function dataFitError(estimate){
+  const fwd = forwardProject(mat, estimate);
+  let s=0;
+  for (let i=0;i<N_RAYS;i++){
+    const f = Math.max(fwd[i],1e-4), m = state.measured[i];
+    s += f - m*Math.log(f);
+  }
+  return s/N_RAYS;
+}
+function trueError(estimate, scale){
+  let s=0, n=0;
+  for (let j=0;j<NPIX;j++){
+    if (sens[j] < 1e-3) continue;
+    const d = estimate[j]/scale - state.phantom[j];
+    s += d*d; n++;
+  }
+  return Math.sqrt(s/Math.max(1,n));
+}
+
+function renderReconFrame(iter){
+  const frame = state.iterFrames[iter];
+  const maxV = Math.max(0.3, Math.max(...frame));
+  drawGridToScreen(reconCtx, reconCanvas, frame, hotIron, maxV);
+  $("iterSlider").max = state.iterFrames.length-1;
+  $("iterSlider").value = iter;
+  $("iterCount").textContent = "iter "+iter+"/"+(N_ITER);
+  drawChart();
+}
+
+function updateOverfitNote(iter){
+  const note = $("overfitNote");
+  if (iter > state.bestIter + 3){
+    note.classList.add("show");
+    note.innerHTML = "<b>Overfitting past iteration "+state.bestIter+".</b> MLEM is now fitting statistical noise in the measured counts, not the object itself &mdash; a noisier image explains the noisy sinogram slightly better, which is why the data-fit curve keeps falling even as the reconstruction drifts further from the true phantom.";
+  } else {
+    note.classList.remove("show");
+  }
+}
+
+function finishReconstruction(){
+  state.phase = "done";
+  let best=0, bv=Infinity;
+  for (let i=0;i<state.trueErr.length;i++){ if (state.trueErr[i]<bv){bv=state.trueErr[i]; best=i;} }
+  state.bestIter = best;
+  $("reconTag").textContent = "done · best @ "+best;
+  $("iterSlider").disabled = false;
+  $("playBtn").disabled = false;
+  $("jumpBestBtn").disabled = false;
+  chartCanvas.classList.add("chart-interactive");
+  drawChart();
+  updateOverfitNote(state.currentIter);
+  $("scanBtn").disabled = false;
+  $("scanBtn").textContent = "Scan again";
+}
+
+/* ---------- UI wiring ---------- */
+document.getElementById("modeSeg").addEventListener("click", e=>{
+  const btn = e.target.closest("button"); if (!btn) return;
+  document.querySelectorAll("#modeSeg button").forEach(b=>b.classList.remove("active"));
+  btn.classList.add("active");
+  state.mode = btn.dataset.val;
+  if (state.phase==="setup") drawScannerStatic();
+});
+
+document.getElementById("phantomSeg").addEventListener("click", e=>{
+  const btn = e.target.closest("button"); if (!btn) return;
+  document.querySelectorAll("#phantomSeg button").forEach(b=>b.classList.remove("active"));
+  btn.classList.add("active");
+  state.phantomKind = btn.dataset.val;
+  $("drawPanel").classList.toggle("hidden", state.phantomKind!=="draw");
+  resetAll();
+  if (state.phantomKind==="draw") renderDrawCanvas();
+  else startScan(); // shepp/circles have a ready-made object, so scan immediately
+});
+
+$("doseSlider").addEventListener("input", e=>{
+  state.doseIdx = +e.target.value;
+  resetAll();
+  startScan();
+});
+
+let fbpPending = false;
+$("fbpCutoffSlider").addEventListener("input", e=>{
+  state.fbpCutoff = (+e.target.value)/100;
+  if (fbpPending) return;
+  fbpPending = true;
+  requestAnimationFrame(()=>{ fbpPending = false; renderFBP(); });
+});
+
+$("scanBtn").addEventListener("click", ()=>{
+  if (state.phase==="done" || state.phase==="setup"){ resetAll(); startScan(); }
+});
+$("resetBtn").addEventListener("click", resetAll);
+
+$("iterSlider").addEventListener("input", e=>{
+  if (state.phase!=="done") return;
+  const iter = +e.target.value;
+  state.currentIter = iter;
+  const frame = state.iterFrames[iter];
+  const maxV = Math.max(0.3, Math.max(...frame));
+  drawGridToScreen(reconCtx, reconCanvas, frame, hotIron, maxV);
+  $("iterCount").textContent = "iter "+iter+"/"+N_ITER;
+  drawChart();
+  updateOverfitNote(iter);
+});
+
+$("playBtn").addEventListener("click", ()=>{
+  if (state.phase!=="done") return;
+  if (state.playTimer){ clearInterval(state.playTimer); state.playTimer=null; $("playBtn").innerHTML="&#9654;"; return; }
+  $("playBtn").innerHTML="&#10074;&#10074;";
+  state.playTimer = setInterval(()=>{
+    let iter = +($("iterSlider").value)+1;
+    if (iter > N_ITER){ iter = 0; }
+    $("iterSlider").value = iter;
+    $("iterSlider").dispatchEvent(new Event("input"));
+  }, 30);
+});
+
+$("jumpBestBtn").addEventListener("click", ()=>{
+  if (state.phase!=="done") return;
+  jumpToBest();
+});
+
+/* ---------- chart is itself a scrubber: click/drag or arrow keys move the iteration ---------- */
+function stopPlayback(){
+  if (state.playTimer){ clearInterval(state.playTimer); state.playTimer=null; $("playBtn").innerHTML="&#9654;"; }
+}
+function iterFromClientX(clientX){
+  const r = chartCanvas.getBoundingClientRect();
+  const xPix = (clientX - r.left) * (chartCanvas.width / r.width);
+  const plotW = chartCanvas.width - CHART_PAD.L - CHART_PAD.R;
+  const frac = (xPix - CHART_PAD.L) / plotW;
+  return Math.max(0, Math.min(N_ITER, Math.round(1 + frac*(N_ITER-1))));
+}
+function scrubToClientX(clientX){
+  $("iterSlider").value = iterFromClientX(clientX);
+  $("iterSlider").dispatchEvent(new Event("input"));
+}
+let chartDragging = false;
+function jumpToBest(){
+  stopPlayback();
+  $("iterSlider").value = state.bestIter;
+  $("iterSlider").dispatchEvent(new Event("input"));
+}
+chartCanvas.addEventListener("pointerdown", e=>{
+  if (state.phase !== "done") return;
+  if (pointInBestButton(e.clientX, e.clientY)){ jumpToBest(); return; }
+  chartDragging = true;
+  stopPlayback();
+  chartCanvas.setPointerCapture(e.pointerId);
+  scrubToClientX(e.clientX);
+});
+chartCanvas.addEventListener("pointermove", e=>{
+  if (chartDragging){ scrubToClientX(e.clientX); return; }
+  if (state.phase === "done") chartCanvas.style.cursor = pointInBestButton(e.clientX, e.clientY) ? "pointer" : "ew-resize";
+});
+chartCanvas.addEventListener("pointerleave", ()=>{ if (!chartDragging) chartCanvas.style.cursor = ""; });
+chartCanvas.addEventListener("pointerup", ()=>{ chartDragging = false; });
+chartCanvas.addEventListener("pointercancel", ()=>{ chartDragging = false; });
+chartCanvas.addEventListener("keydown", e=>{
+  if (state.phase !== "done") return;
+  if (e.key !== "ArrowLeft" && e.key !== "ArrowRight") return;
+  e.preventDefault();
+  stopPlayback();
+  const cur = +($("iterSlider").value);
+  $("iterSlider").value = Math.max(0, Math.min(N_ITER, cur + (e.key==="ArrowRight" ? 1 : -1)));
+  $("iterSlider").dispatchEvent(new Event("input"));
+});
+
+/* ---------- panel info popovers ---------- */
+const PANEL_INFO = {
+  scanner: "A ring of detectors surrounds the object. In PET mode, each flash is a simulated annihilation — two photons fly out in a random direction, and the pair of detectors they hit defines a line of response. In CT mode, a single source sweeps around, casting a fan of rays through the object at each angle.",
+  sinogram: "Columns are angles, rows are offsets from center, brightness is counts. A single point traces a sine wave, hence the name.",
+  fbp: "Smears each projection back across the image, after sharpening it with a filter. Fast and one-shot, but noise and streaks are baked in. The slider trades sharpness for noise.",
+  mlem: "Starts from a blank guess and repeatedly asks what image best explains the counts. Early iterations are smooth; later ones start fitting the noise.",
+  stop: "Fit to data always improves. True error bottoms out, then rises. That's overfitting, and choosing when to stop is a form of regularization, just like early stopping in ML."
+};
+let openInfoBtn = null;
+function closePopover(){
+  if (!openInfoBtn) return;
+  $("infoPopover").hidden = true;
+  openInfoBtn.setAttribute("aria-expanded","false");
+  openInfoBtn = null;
+}
+function openPopover(btn){
+  const pop = $("infoPopover");
+  $("infoPopoverText").textContent = PANEL_INFO[btn.dataset.panel] || "";
+  pop.hidden = false;
+  const r = btn.getBoundingClientRect();
+  const pr = pop.getBoundingClientRect();
+  let left = Math.min(Math.max(12, r.left), window.innerWidth - pr.width - 12);
+  let top = r.bottom + 6;
+  if (top + pr.height > window.innerHeight - 12) top = r.top - pr.height - 6;
+  pop.style.left = left + "px";
+  pop.style.top = Math.max(12, top) + "px";
+  btn.setAttribute("aria-expanded","true");
+  openInfoBtn = btn;
+}
+document.querySelectorAll(".infobtn").forEach(btn=>{
+  btn.addEventListener("click", e=>{
+    e.stopPropagation();
+    if (openInfoBtn === btn){ closePopover(); return; }
+    closePopover();
+    openPopover(btn);
+  });
+});
+document.addEventListener("click", e=>{
+  if (openInfoBtn && !e.target.closest(".popover")) closePopover();
+});
+document.addEventListener("keydown", e=>{ if (e.key === "Escape") closePopover(); });
+window.addEventListener("scroll", closePopover, true);
+window.addEventListener("resize", closePopover);
+
+/* ---------- boot ---------- */
+$("scannerTag").textContent = "calibrating…";
+setTimeout(()=>{
+  mat = buildSystemMatrix();
+  sens = computeSensitivity(mat);
+  resetAll();
+  startScan(); // open in a working state — scan immediately instead of an empty shell
+}, 10);
+
+})();
+</script>

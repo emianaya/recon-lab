@@ -1,0 +1,14 @@
+{
+  "name": "recon-lab",
+  "version": "1.0.0",
+  "description": "Interactive PET/CT scanner + MLEM/FBP reconstruction demo",
+  "main": "index.html",
+  "scripts": {
+    "test": "node recon-math.test.js && node recon-mlem.test.js && node recon-fbp.test.js && node recon-noise.test.js && node recon-e2e.test.js",
+    "test:ui": "node recon-ui.test.js"
+  },
+  "license": "MIT",
+  "devDependencies": {
+    "playwright": "^1.63.0"
+  }
+}
