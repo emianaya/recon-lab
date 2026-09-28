@@ -1144,7 +1144,7 @@ chartCanvas.addEventListener("keydown", e=>{
 
 /* ---------- panel info popovers ---------- */
 const PANEL_INFO = {
-  scanner: "A ring of detectors surrounds the object. In PET mode, each flash is a simulated annihilation — two photons fly out in a random direction, and the pair of detectors they hit defines a line of response. In CT mode, a single source sweeps around, casting a fan of rays through the object at each angle.",
+  scanner: "A ring of detectors surrounds the object. In PET mode, each flash is a simulated annihilation — two photons fly out in a random direction, and the pair of detectors they hit defines a line of response. CT's rotating source and fan of rays are a visual metaphor only: under the hood both modes share the same simplified parallel-beam math, not real fan-beam geometry.",
   sinogram: "Columns are angles, rows are offsets from center, brightness is counts. A single point traces a sine wave, hence the name.",
   fbp: "Smears each projection back across the image, after sharpening it with a filter. Fast and one-shot, but noise and streaks are baked in. The slider trades sharpness for noise.",
   mlem: "Starts from a blank guess and repeatedly asks what image best explains the counts. Early iterations are smooth; later ones start fitting the noise.",
