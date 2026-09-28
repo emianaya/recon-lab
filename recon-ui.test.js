@@ -19,7 +19,7 @@ async function main() {
   page.on("pageerror", (err) => pageErrors.push(err.message));
   page.on("console", (msg) => { if (msg.type() === "error") pageErrors.push(msg.text()); });
 
-  const fileUrl = "file://" + path.resolve(__dirname, "recon-lab.html");
+  const fileUrl = "file://" + path.resolve(__dirname, "index.html");
   await page.goto(fileUrl);
 
   // ---------------------------------------------------------------------
