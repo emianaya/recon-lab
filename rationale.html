@@ -1,0 +1,182 @@
+<title>Recon Lab Rationale</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap">
+<style>
+:root{
+  --bg:#f5f3ee; --surface:#ffffff; --surface-2:#eef1ee;
+  --ink:#14201c; --ink-2:#3d4a44; --ink-muted:#6d7a73;
+  --line:#dde3dd; --line-strong:#c7d0c6;
+  --accent:#0e7c86; --accent-ink:#ffffff; --accent-wash:#0e7c8614;
+  color-scheme:light;
+}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){
+    --bg:#11161a; --surface:#171d21; --surface-2:#1c2328;
+    --ink:#e9efe9; --ink-2:#bcc6bf; --ink-muted:#8b968f;
+    --line:#2a3238; --line-strong:#374047;
+    --accent:#3bc6d1; --accent-ink:#06181a; --accent-wash:#3bc6d11f;
+    color-scheme:dark;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#11161a; --surface:#171d21; --surface-2:#1c2328;
+  --ink:#e9efe9; --ink-2:#bcc6bf; --ink-muted:#8b968f;
+  --line:#2a3238; --line-strong:#374047;
+  --accent:#3bc6d1; --accent-ink:#06181a; --accent-wash:#3bc6d11f;
+  color-scheme:dark;
+}
+*{box-sizing:border-box;}
+body{
+  background:var(--bg); color:var(--ink);
+  font-family:"IBM Plex Sans",system-ui,-apple-system,sans-serif;
+  padding:56px 20px 80px; display:flex; flex-direction:column; align-items:center;
+  line-height:1.6;
+}
+.mono{font-family:"IBM Plex Mono",ui-monospace,monospace;}
+.wrap{width:100%; max-width:700px;}
+h1,h2,h3{text-wrap:balance; margin:0; color:var(--ink);}
+p{margin:0 0 1em; color:var(--ink-2); max-width:70ch;}
+a{color:var(--accent); text-decoration-thickness:1.5px; text-underline-offset:2px;}
+
+header{margin-bottom:8px;}
+.eyebrow{
+  font-family:"IBM Plex Mono",monospace; font-size:.72rem; letter-spacing:.08em; text-transform:uppercase;
+  color:var(--accent); font-weight:600; margin-bottom:10px;
+}
+h1{font-size:2rem; font-weight:700; letter-spacing:-0.01em; margin-bottom:6px;}
+.subtitle{color:var(--ink-muted); font-size:1.02rem; max-width:60ch;}
+
+.meta{
+  margin:28px 0 40px; background:var(--surface); border:1px solid var(--line); border-radius:12px;
+  padding:18px 20px; display:grid; grid-template-columns:1fr 1fr; gap:14px 24px;
+}
+@media (max-width:520px){ .meta{grid-template-columns:1fr;} }
+.meta dt{font-size:.68rem; text-transform:uppercase; letter-spacing:.07em; color:var(--ink-muted); font-weight:600; margin-bottom:3px;}
+.meta dd{margin:0; font-size:.92rem; color:var(--ink); font-family:"IBM Plex Mono",monospace;}
+.meta dd a{word-break:break-word;}
+
+section{margin-top:44px;}
+h2{
+  font-size:1.28rem; font-weight:700; margin-bottom:14px; padding-bottom:10px;
+  border-bottom:1px solid var(--line);
+}
+h3{font-size:1rem; font-weight:600; color:var(--ink); margin:22px 0 6px;}
+
+.decision{
+  border-left:3px solid var(--accent); background:var(--accent-wash); border-radius:0 8px 8px 0;
+  padding:14px 18px; margin:18px 0;
+}
+.decision h3{margin:0 0 6px; font-size:.95rem;}
+.decision p{margin:0; font-size:.94rem;}
+.decision .tradeoff{
+  margin-top:8px; padding-top:8px; border-top:1px dashed var(--line-strong);
+  font-size:.86rem; color:var(--ink-muted);
+}
+.decision .tradeoff b{color:var(--ink-2); font-weight:600;}
+
+ul{margin:0 0 1em; padding-left:1.3em; color:var(--ink-2);}
+li{margin-bottom:.5em;}
+
+.evidence{
+  font-family:"IBM Plex Mono",monospace; font-size:.82rem; background:var(--surface-2);
+  border:1px solid var(--line); border-radius:6px; padding:2px 6px; white-space:nowrap;
+}
+
+.quote{
+  border-left:3px solid var(--line-strong); padding-left:16px; margin:16px 0;
+  color:var(--ink-muted); font-size:.92rem; font-style:italic;
+}
+
+footer{
+  margin-top:56px; padding-top:20px; border-top:1px solid var(--line);
+  color:var(--ink-muted); font-size:.85rem;
+}
+</style>
+
+<div class="wrap">
+
+  <header>
+    <div class="eyebrow">Design Rationale</div>
+    <h1>Recon Lab</h1>
+    <p class="subtitle">A PET/CT scanner and reconstruction simulator that turns iterative-reconstruction overfitting — sharpen, then go noisy — into something you watch happen, not something you're told about.</p>
+  </header>
+
+  <dl class="meta">
+    <div><dt>Theme</dt><dd>1 &mdash; Exploration &amp; Understanding</dd></div>
+    <div><dt>Time spent</dt><dd>~2&ndash;4 hours</dd></div>
+    <div><dt>Live prototype</dt><dd><a href="https://emianaya.github.io/recon-lab/" target="_blank" rel="noopener">emianaya.github.io/recon-lab</a></dd></div>
+    <div><dt>Repository</dt><dd><a href="https://github.com/emianaya/recon-lab" target="_blank" rel="noopener">github.com/emianaya/recon-lab</a></dd></div>
+  </dl>
+
+  <section>
+    <h2>Why this theme, and this approach</h2>
+    <p>I picked Theme 1 because tomographic reconstruction sits at an unusually good intersection for a demo like this: it's a real, well-posed physical and mathematical system, not a toy; most engineers have heard "CT scan" and "PET scan" without knowing how either actually produces an image; and&mdash;less obviously&mdash;the failure mode of iterative reconstruction is <em>exactly</em> the bias&ndash;variance tradeoff every ML engineer already has intuition for from training curves. That last point is what decided it over a more generic concept explainer: I wanted the tool's "aha" to transfer directly to something the reviewer already understands, not teach an isolated fact.</p>
+    <p>The approach follows from that: rather than illustrate the idea with a diagram, the tool actually runs it. A sparse Radon-transform system matrix, a Poisson noise model, and two real reconstruction algorithms (MLEM and filtered backprojection) execute client-side, live, with no backend&mdash;so the object you draw, the dose you pick, and the curve you watch are the real computation, not a canned sequence standing in for one.</p>
+  </section>
+
+  <section>
+    <h2>What makes it interesting, or non-obvious</h2>
+    <p>Most "explain X" tools show a finished picture or play a fixed animation. Here, the reconstruction panel is a live 100-iteration optimization you can grab and scrub anywhere along&mdash;drag the chart, and both the iteration slider and the reconstructed image follow, in either direction. Draw your own object on the 64&times;64 canvas and it goes through the identical scan-and-reconstruct pipeline as the built-in phantoms; there's no special-cased "demo" path.</p>
+    <p>The less obvious choice was putting the error-vs-iteration chart, not the reconstructed image, at the center of the design. The picture is the hook. The chart&mdash;where the data-fit curve keeps improving while true error bottoms out around iteration 10 and then climbs&mdash;is the actual point: early stopping as regularization, made physical instead of abstract. A "BEST" marker you can click jumps straight to the optimal stopping point, so the gap between "the algorithm says it's still improving" and "the image is actually getting worse" is something you click through, not something you're told.</p>
+  </section>
+
+  <section>
+    <h2>Key design decisions and tradeoffs</h2>
+
+    <div class="decision">
+      <h3>One shared Radon model for PET and CT, not two</h3>
+      <p>PET (ring of detectors, coincidence events) and CT (rotating source, fan of rays) look different in the scanner animation, but both feed the same parallel-beam sinogram and the same reconstruction code underneath.</p>
+      <div class="tradeoff"><b>Tradeoff:</b> not physically precise for CT's actual fan-beam geometry. I judged the shared model was the right call for a demo whose point is the reconstruction algorithm's behavior, not scanner geometry&mdash;and said so directly in the UI rather than letting a reviewer assume more rigor than is there.</div>
+    </div>
+
+    <div class="decision">
+      <h3>Tests target the math, not the pixels</h3>
+      <p>The reconstruction math (<span class="evidence">recon-math.js</span>) is a standalone module loaded by both the browser page and a Node test suite&mdash;so tests exercise the real implementation, not a hand-copied stand-in that could drift. The suite is property-based: an adjoint test (&#10216;Ax,y&#10217; &asymp; &#10216;x,A&#7488;y&#10217;, which came back to machine precision&mdash;relative error <span class="evidence">7&times;10&#8315;&#185;&#8304;</span>), a point-source sinusoid check, mass conservation, MLEM's log-likelihood monotonicity and count-preservation identities, FBP linearity.</p>
+      <div class="tradeoff"><b>Tradeoff:</b> writing property tests took longer than eyeballing the reconstructed image and moving on. It's also what actually caught real bugs during development&mdash;including a genuine clamping bug in the chart's y-axis that a purely visual check had missed.</div>
+    </div>
+
+    <div class="decision">
+      <h3>Numbers before pixels</h3>
+      <p>The iteration count, dose default, and chart axis scale weren't tuned by eye. I ran the MLEM loop headlessly across dose levels first, measured where the true-error minimum actually falls, and picked settings (100 iterations, low-dose default) so the "money shot" reliably lands somewhere visible on a plain linear axis&mdash;rather than reaching for a log axis to paper over a minimum that was avoidably squeezed against the edge.</p>
+      <div class="tradeoff"><b>Tradeoff:</b> more upfront measurement work than shipping a plausible-looking default and adjusting later from vibes.</div>
+    </div>
+
+    <div class="decision">
+      <h3>Auto-run everywhere, no inert start screen</h3>
+      <p>The scan runs on load, and changing the phantom or the dose slider triggers an immediate rescan&mdash;no "Start" button gatekeeping the first thing a reviewer sees.</p>
+      <div class="tradeoff"><b>Tradeoff:</b> less deliberate pacing for a first-time user, but it matters directly for the take-home's "self-contained evaluation" requirement: someone should see the tool doing something the moment the link opens, not an empty shell waiting for input.</div>
+    </div>
+
+    <div class="decision">
+      <h3>FBP's cutoff and MLEM's iteration count, as the same idea twice</h3>
+      <p>FBP's "smooth &harr; sharp" slider and MLEM's iteration count are framed as two knobs on the identical resolution/noise tradeoff, sitting side by side at equal visual weight&mdash;rather than treating FBP as a footnote to the "real" iterative method.</p>
+      <div class="tradeoff"><b>Tradeoff:</b> more surface area to build and test than shipping MLEM alone, but it's what makes the regularization idea generalize instead of reading as one algorithm's quirk.</div>
+    </div>
+  </section>
+
+  <section>
+    <h2>Working with Claude Code</h2>
+    <p>I used Claude Code throughout, in an iterative build-critique-verify loop rather than a single prompt-and-accept pass. A few concrete moments that shaped the result:</p>
+    <ul>
+      <li>When the true-error minimum looked squeezed against the chart's edge, my first instinct was a log axis. Claude built that, but I pushed back once I looked at it properly&mdash;the real issue was iteration count and a y-axis clamping bug, not the axis scale. We ran the actual numbers headlessly before I accepted the fix, rather than trusting how it looked.</li>
+      <li>I asked for real tests, not a claim that things worked&mdash;specifically an adjoint test, since a mismatched forward/backprojector is the classic silent bug in reconstruction code. Claude proposed the specific test list; I had it show me the test code and the run output before I'd treat any correctness claim as settled.</li>
+      <li>Before calling the deploy done, I had Claude run the Playwright suite against the actual live GitHub Pages URL, not just the local file&mdash;which is how we confirmed the deployed <span class="evidence">recon-math.js</span> path and cross-file loading genuinely worked, rather than assuming a local pass would transfer.</li>
+    </ul>
+    <p>Full transcripts are submitted alongside this doc.</p>
+  </section>
+
+  <section>
+    <h2>How I'd extend this with more time</h2>
+    <ul>
+      <li><b>Real fan/cone-beam CT geometry</b>, distinct from PET's parallel-beam model, so the physical difference between modalities shows up in the reconstruction itself, not just the scanner animation.</li>
+      <li><b>OSEM or a regularized MAP reconstruction</b> alongside MLEM, to show that early stopping isn't the only lever on this tradeoff&mdash;algorithmic regularization is another.</li>
+      <li><b>Upload a real image as a custom phantom</b> and report a quantitative similarity metric (SSIM/PSNR) against it, instead of relying on visual comparison alone.</li>
+      <li><b>Higher resolution.</b> The in-browser sparse-matrix approach is tuned for 64&times;64 interactivity; a WASM or server-side path could go to 256&times;256 without freezing the tab.</li>
+      <li><b>CI</b> running <span class="evidence">npm test</span> and the Playwright suite on every push, now that both exist.</li>
+    </ul>
+  </section>
+
+  <footer>
+    Recon Lab &mdash; built with Claude Code. Prototype: <a href="https://emianaya.github.io/recon-lab/">emianaya.github.io/recon-lab</a> &middot; Code: <a href="https://github.com/emianaya/recon-lab">github.com/emianaya/recon-lab</a>
+  </footer>
+
+</div>
