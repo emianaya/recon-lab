@@ -1,9 +1,8 @@
 # Recon Lab
 
-An interactive PET/CT scanner and image-reconstruction demo: simulate a scan, watch the raw sinogram the scanner actually records, and reconstruct an image from it with either MLEM (iterative) or FBP (filtered backprojection) — including the classic overfitting curve where reconstruction error bottoms out and then rises as an iterative algorithm starts fitting noise instead of signal.
+An interactive medical image reconstruction demo (PET/CT): simulate a scan, watch the raw sinogram the scanner actually records, and reconstruct an image from it with either MLEM (iterative) or FBP (filtered backprojection) — including the classic overfitting curve where reconstruction error bottoms out and then rises as an iterative algorithm starts fitting noise instead of signal.
 
 **Live demo:** https://emianaya.github.io/recon-lab/
-**Design rationale:** https://claude.ai/artifact/YGwEYkpuiFad93kXWo5hqs
 
 ## Files
 
