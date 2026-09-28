@@ -791,14 +791,14 @@ function drawChart(){
   if (lastI >= 5){
     const lx = xOf(lastI) - 8;
     c.font = "11px 'IBM Plex Mono', monospace";
-    haloText(c, "fit to data", lx, yOf(state.dataErr[lastI],minD,maxD) - 14, dataColor, "right");
-    haloText(c, "true error", lx, yOf(state.trueErr[lastI],minT,maxT) + 16, truthColor, "right");
+    haloText(c, "fit to data (−log-likelihood)", lx, yOf(state.dataErr[lastI],minD,maxD) - 14, dataColor, "right");
+    haloText(c, "true error (RMSE)", lx, yOf(state.trueErr[lastI],minT,maxT) + 16, truthColor, "right");
   }
 
   // per-curve normalization exaggerates the true-error rise visually — ground it with real numbers
   const cur = state.trueErr[state.currentIter];
   const bestTxt = state.phase==="done" ? state.trueErr[state.bestIter].toFixed(3) : Math.min(...state.trueErr).toFixed(3);
-  $("errReadout").textContent = "error now "+cur.toFixed(3)+" · best "+bestTxt;
+  $("errReadout").textContent = "RMSE vs. true image — now "+cur.toFixed(3)+" · best "+bestTxt;
   chartCanvas.setAttribute("aria-valuenow", state.currentIter);
   chartCanvas.setAttribute("aria-valuemax", N_ITER);
 }
